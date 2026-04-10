@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>趣味选择题互动网页</title>
+  <style>
+    :root {
+      --bg1: #1f1147;
+      --bg2: #4b2f9f;
+      --card: #ffffff;
+      --primary: #6b4df5;
+      --primary-hover: #5638df;
+      --text: #1f2430;
+      --muted: #6b7280;
+      --ok: #16a34a;
+      --bad: #dc2626;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #5f3dd7 0%, var(--bg1) 35%, #110a2b 100%);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+
+    .quiz-card {
+      width: min(740px, 100%);
+      background: var(--card);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 18px 48px rgba(10, 6, 35, 0.35);
+      animation: fadeIn 0.35s ease;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .badge {
+      font-size: 14px;
+      color: var(--muted);
+      background: #f3f4f6;
+      padding: 6px 10px;
+      border-radius: 999px;
+    }
+
+    .progress {
+      width: 100%;
+      height: 10px;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 14px 0 20px;
+    }
+
+    .progress > div {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #7a5cff, #4f46e5);
+      transition: width 0.35s ease;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      color: #111827;
+    }
+
+    .question {
+      font-size: 22px;
+      margin: 12px 0 20px;
+      line-height: 1.4;
+    }
+
+    .options {
+      display: grid;
+      gap: 12px;
+    }
+
+    button.option {
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      background: white;
+      padding: 14px 16px;
+      text-align: left;
+      font-size: 17px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button.option:hover {
+      border-color: #c4b5fd;
+      transform: translateY(-1px);
+    }
+
+    button.option.correct {
+      border-color: #86efac;
+      background: #f0fdf4;
+      color: #14532d;
+    }
+
+    button.option.wrong {
+      border-color: #fecaca;
+      background: #fef2f2;
+      color: #7f1d1d;
+    }
+
+    .feedback {
+      margin-top: 14px;
+      min-height: 24px;
+      font-size: 16px;
+      color: var(--muted);
+    }
+
+    .feedback.good { color: var(--ok); }
+    .feedback.bad { color: var(--bad); }
+
+    .next-btn {
+      margin-top: 18px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--primary);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 12px 16px;
+      cursor: pointer;
+      display: none;
+    }
+
+    .next-btn:hover { background: var(--primary-hover); }
+
+    .result {
+      text-align: center;
+      padding: 14px 0;
+    }
+
+    .result h2 {
+      margin: 0 0 14px;
+      font-size: 30px;
+      color: #111827;
+    }
+
+    .result p {
+      font-size: 20px;
+      margin: 10px 0;
+      line-height: 1.6;
+    }
+
+    .again {
+      margin-top: 14px;
+      border: 0;
+      border-radius: 10px;
+      background: #111827;
+      color: #fff;
+      padding: 12px 18px;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <main class="quiz-card" id="app"></main>
+
+  <script>
+    const questions = [
+      {
+        q: "如果你在冰箱里发现一只会唱歌的土豆，你会？",
+        options: ["给它出专辑", "先确认我是不是没睡醒", "叫朋友来当评委", "把冰箱门轻轻关上当没看见"],
+        answer: 0,
+        explain: "艺术不分物种，土豆也有舞台！"
+      },
+      {
+        q: "下雨天最适合做什么？",
+        options: ["在窗边假装自己是MV主角", "裹被子点奶茶", "认真学习（我假装信了）", "看天空发呆直到饿了"],
+        answer: 1,
+        explain: "裹被子+奶茶是雨天的标准解。"
+      },
+      {
+        q: "如果你有超能力，你最想要？",
+        options: ["一秒入睡", "吃不胖体质", "瞬间移动去楼下买零食", "让周一直接消失"],
+        answer: 3,
+        explain: "周一：听我说谢谢你。"
+      },
+      {
+        q: "你觉得最神奇的声音是？",
+        options: ["外卖小哥：到了", "工资到账提示音", "老师：这题很简单", "闹钟：再睡五分钟"],
+        answer: 1,
+        explain: "到账声，成年人快乐源泉。"
+      },
+      {
+        q: "你坚持点开这个网页的核心原因是？",
+        options: ["被标题骗进来", "我真的想挑战智商", "我就想看看结尾写什么", "随手一点，结果停不下来"],
+        answer: 2,
+        explain: "你我都知道，结尾才是重点。"
+      }
+    ];
+
+    let current = 0;
+    let score = 0;
+    let locked = false;
+
+    const app = document.getElementById('app');
+
+    function renderQuestion() {
+      const item = questions[current];
+      const progress = Math.round((current / questions.length) * 100);
+      app.innerHTML = `
+        <div class="topbar">
+          <h1>🎯 趣味选择题挑战</h1>
+          <span class="badge">第 ${current + 1} / ${questions.length} 题</span>
+        </div>
+        <div class="progress"><div style="width:${progress}%;"></div></div>
+        <div class="question">${item.q}</div>
+        <div class="options">
+          ${item.options.map((op, i) => `<button class="option" data-index="${i}">${String.fromCharCode(65 + i)}. ${op}</button>`).join('')}
+        </div>
+        <div class="feedback" id="feedback"></div>
+        <button class="next-btn" id="nextBtn">下一题 ➜</button>
+      `;
+
+      document.querySelectorAll('.option').forEach(btn => {
+        btn.addEventListener('click', () => handleChoice(btn));
+      });
+
+      document.getElementById('nextBtn').addEventListener('click', () => {
+        current += 1;
+        locked = false;
+        if (current < questions.length) {
+          renderQuestion();
+        } else {
+          renderResult();
+        }
+      });
+    }
+
+    function handleChoice(btn) {
+      if (locked) return;
+      locked = true;
+
+      const chosen = Number(btn.dataset.index);
+      const answer = questions[current].answer;
+      const feedback = document.getElementById('feedback');
+
+      document.querySelectorAll('.option').forEach(option => {
+        const idx = Number(option.dataset.index);
+        if (idx === answer) option.classList.add('correct');
+        if (idx === chosen && idx !== answer) option.classList.add('wrong');
+        option.disabled = true;
+      });
+
+      if (chosen === answer) {
+        score += 1;
+        feedback.className = 'feedback good';
+        feedback.textContent = `答对啦！${questions[current].explain}`;
+      } else {
+        feedback.className = 'feedback bad';
+        feedback.textContent = `答错了～${questions[current].explain}`;
+      }
+
+      const nextBtn = document.getElementById('nextBtn');
+      nextBtn.style.display = 'inline-block';
+      if (current === questions.length - 1) {
+        nextBtn.textContent = '查看结果 🎉';
+      }
+    }
+
+    function renderResult() {
+      const percent = Math.round((score / questions.length) * 100);
+      const title = percent >= 80 ? '你是趣味答题王！👑' : percent >= 50 ? '你是快乐答题家！😎' : '你是气氛组选手！🎈';
+
+      app.innerHTML = `
+        <section class="result">
+          <h2>${title}</h2>
+          <p>你的得分：<strong>${score}</strong> / ${questions.length}（${percent}%）</p>
+          <p>恭喜你，黄志银成功浪费了五分钟。</p>
+          <button class="again" id="restartBtn">再来一次</button>
+        </section>
+      `;
+
+      document.getElementById('restartBtn').addEventListener('click', () => {
+        current = 0;
+        score = 0;
+        locked = false;
+        renderQuestion();
+      });
+    }
+
+    renderQuestion();
+  </script>
+</body>
+</html>
